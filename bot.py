@@ -58,6 +58,8 @@ def save_into_sheet():
     sheet.column_dimensions['B'].width = 30
     sheet.column_dimensions['C'].width = 30
 
+    sheet.row_dimensions[1].height = 30
+
     sheet.cell(row=1, column=1).value = get_title(line_number)
     sheet.cell(row=1, column=1).font = Font(bold=True, size=20)
     sheet.cell(row=1, column=2).value = "Latitude"
