@@ -1,7 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 from openpyxl import *
-from openpyxl.styles import Font
+from openpyxl.styles import Font, Alignment
+import googlemaps
 
 url = "https://moovitapp.com/index/pt-br/transporte_p%C3%BAblico-line-0903-Maceio-4466-2221160-91572044-3"
 page = requests.get(url)
@@ -31,23 +32,50 @@ def get_title(line_number):
     return line_number + " - " + line_title
 
 
+def get_coordinates(stops):
+    gmaps = googlemaps.Client(key='YOUR_API_KEY')
+    coordinates = []
+    for stop in stops:
+        geocode_result = gmaps.geocode(stop)
+        if geocode_result:
+            coordinates.append(geocode_result[0]['geometry']['location'])
+        else:
+            coordinates.append(None)
+    return coordinates
+
+
 def save_into_sheet():
+    print("Getting stops addresses...")
     sheets = Workbook()
     sheet = sheets.active
 
     line_number = get_line_number()
     stops = get_stops_addresses()
+    coordinates = get_coordinates(stops)
 
-    # increase the size of column A
+    # increase the size of columns
     sheet.column_dimensions['A'].width = 150
+    sheet.column_dimensions['B'].width = 30
+    sheet.column_dimensions['C'].width = 30
 
     sheet.cell(row=1, column=1).value = get_title(line_number)
     sheet.cell(row=1, column=1).font = Font(bold=True, size=20)
-
+    sheet.cell(row=1, column=2).value = "Latitude"
+    sheet.cell(row=1, column=2).font = Font(bold=True, size=20)
+    sheet.cell(row=1, column=3).value = "Longitude"
+    sheet.cell(row=1, column=3).font = Font(bold=True, size=20)
+    
     for i in range(len(stops)):
         sheet.cell(row=i + 2, column=1).value = stops[i]
+        if coordinates[i]:
+            sheet.cell(row=i + 2, column=2).value = coordinates[i]['lat']
+            sheet.cell(row=i + 2, column=3).value = coordinates[i]['lng']
+
+            sheet.cell(row=i + 2, column=2).alignment = Alignment(horizontal='left') 
+            sheet.cell(row=i + 2, column=3).alignment = Alignment(horizontal='left')
 
     sheets.save(f'linhas/{line_number}.xlsx')
+    print(f"Saved {line_number}.xlsx")
 
 
 save_into_sheet()
